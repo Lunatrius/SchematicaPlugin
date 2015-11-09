@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class SchematicaPlugin extends Plugin implements Listener {
+    private static final String CHANNEL = "schematica";
     private static final String PERM_PRINTER = "schematica.printer";
     private static final String PERM_SAVE = "schematica.save";
     private static final String PERM_LOAD = "schematica.load";
@@ -22,13 +23,13 @@ public class SchematicaPlugin extends Plugin implements Listener {
     @Override
     public void onEnable() {
         getProxy().getPluginManager().registerListener(this, this);
-        getProxy().registerChannel("schematica");
+        getProxy().registerChannel(CHANNEL);
     }
 
 
     @Override
     public void onDisable() {
-        getProxy().unregisterChannel("schematica");
+        getProxy().unregisterChannel(CHANNEL);
         getProxy().getPluginManager().unregisterListener(this);
     }
 
@@ -37,7 +38,7 @@ public class SchematicaPlugin extends Plugin implements Listener {
         final ProxiedPlayer player = event.getPlayer();
         final byte[] payload = getPayload(player);
         if (payload != null) {
-            player.sendData("schematica", payload);
+            player.sendData(CHANNEL, payload);
         }
     }
 
