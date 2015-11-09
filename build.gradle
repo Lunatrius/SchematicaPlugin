@@ -1,0 +1,115 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = 'sonatype'
+            url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+        }
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+ext.build = System.getenv().BUILD_NUMBER ?: 'git'
+
+group = 'com.github.lunatrius'
+version = "${project.version_major}.${project.version_minor}.${project.version_micro}.${build}"
+
+compileJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
+}
+
+dependencies {
+    compile group: 'net.md-5', name: 'bungeecord-api', version: project.version_bungeecord_api
+}
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property 'version', project.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'plugin.yml'
+
+        expand([
+                'version': project.version
+        ])
+    }
+
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'plugin.yml'
+    }
+}
+
+jar {
+    classifier = 'bungeecord'
+}
+
+if (!project.hasProperty('keystore_location'))
+    ext.keystore_location = '.'
+
+if (!project.hasProperty('keystore_alias'))
+    ext.keystore_alias = ''
+
+if (!project.hasProperty('keystore_password'))
+    ext.keystore_password = ''
+
+task signJars(dependsOn: ['jar']) {
+    inputs.dir jar.destinationDir
+    inputs.file keystore_location
+    inputs.property 'keystore_alias', keystore_alias
+    inputs.property 'keystore_password', keystore_password
+    outputs.dir jar.destinationDir
+
+    onlyIf {
+        return keystore_location != '.'
+    }
+
+    doLast {
+        jar.destinationDir.eachFile { file ->
+            if (!file.getPath().endsWith('.jar'))
+                return;
+
+            logger.lifecycle "signing ${file}"
+            ant.signjar(
+                    destDir: file.getParentFile(),
+                    jar: file,
+                    keystore: keystore_location,
+                    alias: keystore_alias,
+                    storepass: keystore_password
+            )
+        }
+    }
+}
+
+if (!project.hasProperty('release_location'))
+    ext.release_location = '.'
+else
+    ext.release_location = release_location.replace('{modid}', project.name).replace('{mcversion}', project.version_minecraft).replace('{version}', version)
+
+task release(dependsOn: 'signJars', type: Copy) {
+    from project.tasks.jar.destinationDir
+    into project.file(project.release_location)
+
+    eachFile { file ->
+        logger.lifecycle "copying ${file}"
+    }
+
+    onlyIf {
+        return project.release_location != '.'
+    }
+}

@@ -1,0 +1,4 @@
+name: SchematicaPlugin
+main: com.github.lunatrius.schematica.plugin.SchematicaPlugin
+version: {version}
+author: Lunatrius

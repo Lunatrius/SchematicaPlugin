@@ -1,0 +1,5 @@
+# allow the use of these features on the client
+capability:
+  printer: true
+  save: true
+  load: true
